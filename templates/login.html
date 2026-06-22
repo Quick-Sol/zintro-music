@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+
+{% block fullpage %}
+<div class="login-shell">
+  <div class="login-art">
+    <div class="b">
+      <div class="mark">zintro<span class="dot">.</span></div>
+      <div class="sub up">v3 · 2026</div>
+    </div>
+    <div class="disc"></div>
+    <div>
+      <h2>Music that <em>knows</em><br/>what you mean.</h2>
+      <p class="quote" style="margin-top:24px">
+        <b>Zintro</b> learns the way you actually listen — the 11pm wind-down, the Tuesday-morning bossa,
+        the song you secretly replay six times — and turns it into a soundtrack that's yours alone.
+      </p>
+    </div>
+    <div class="quote" style="font-size:10px;color:var(--muted)">— Used by 4.1M listeners across 92 countries</div>
+  </div>
+
+  <div class="login-form">
+    <div class="step up">Step <b>01</b> · authenticate</div>
+    <h3 class="serif">Sign in to continue.</h3>
+    <p class="intro">
+      Bring your taste with you. Zintro syncs to your Spotify account to read your recent plays, top
+      tracks, and audio features — and never writes back without your say.
+    </p>
+
+    <a class="gbtn" href="{{ url_for('auth_google') }}">
+    <span>Continue with Google</span>
+</a>
+
+<a class="gbtn spotify" href="{{ url_for('auth_spotify') }}">
+    <span>
+        {% if spotify_ready %}
+        Continue with Spotify (live)
+        {% else %}
+        Continue with Spotify (set keys to enable)
+        {% endif %}
+    </span>
+</a>
+
+<div class="divider"><span>OR</span></div>
+
+    <div class="login-perks">
+      <div class="p">Mood-aware mixes</div>
+      <div class="p">No ads, ever</div>
+      <div class="p">Cross-device sync</div>
+    </div>
+
+    <div class="fineprint">
+      By continuing you agree to Zintro's <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+      We never sell your listening data. Spotify integration uses read-only OAuth scopes.
+    </div>
+  </div>
+</div>
+{% endblock %}

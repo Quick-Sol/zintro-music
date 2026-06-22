@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Discover{% endblock %}
+{% block crumb %}Discover{% endblock %}
+{% block sub %}new music, picked for you{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+  <h1>Music you haven't<br/>heard <em>yet</em>.</h1>
+  <div class="desc">
+    {% if items %}
+      Live recommendations from Spotify, seeded from your last five plays and
+      tuned to your dominant mood.
+    {% else %}
+      In demo mode — these are pulled from your mood-matched pool. Connect Spotify
+      from the login screen for fresh /recommendations API calls.
+    {% endif %}
+  </div>
+</div>
+
+{% if items %}
+<div class="cards">
+  {% for t in items %}
+  <div class="c">
+    <div class="cover"></div>
+    <h4><span class="song"
+        data-artist="{{ (t.artists | map(attribute='name') | join(', ')) if t.artists else '—' }}"
+        data-genre="Spotify pick"
+        data-year="{{ (t.album.release_date or '')[:4] if t.album else '' }}"
+        data-bpm=""
+        data-key="">{{ t.name }}</span></h4>
+    <div class="ar">{{ t.artists | map(attribute='name') | join(', ') }}</div>
+    <div class="ge"><span>{{ (t.album.name if t.album else '—')[:24] }}</span><span class="b">▶</span></div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cards">
+  {% for t in demo_pool %}
+  <div class="c">
+    <div class="cover"></div>
+    <h4><span class="song"
+        data-artist="{{ t.artist }}"
+        data-genre="{{ t.genre or '—' }}"
+        data-year="{{ t.year or '' }}"
+        data-bpm="{{ t.tempo|int if t.tempo else '' }}"
+        data-key="{{ t.music_key or '—' }}">{{ t.name }}</span></h4>
+    <div class="ar">{{ t.artist }}</div>
+    <div class="ge"><span>{{ (t.genre or '—')[:24] }}</span><span class="b">▶</span></div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

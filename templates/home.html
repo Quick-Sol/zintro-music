@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block crumb %}Home{% endblock %}
+{% block sub %}your listening, right now{% endblock %}
+
+{% block head %}
+<script id="page-vars" type="application/json">{{ {
+  "dominantMood": dominant|capitalize,
+  "moodColor": mood_color or '#9b59b6',
+  "energyLevel": (plays[0].energy or 0) if plays else 0,
+  "valenceLevel": (plays[0].valence or 0) if plays else 0,
+  "confidencePct": 87,
+  "hourNow": (plays[0].hour if plays else 22),
+  "totalPlays": plays|length,
+  "topCount": top|length
+} | tojson }}</script>
+<script>
+  (function(){
+    const v = JSON.parse(document.getElementById('page-vars').textContent);
+    const r = document.documentElement.style;
+    r.setProperty('--dominant-mood', JSON.stringify(v.dominantMood));
+    r.setProperty('--mood-color', v.moodColor);
+    r.setProperty('--energy-level', v.energyLevel);
+    r.setProperty('--valence-level', v.valenceLevel);
+    r.setProperty('--confidence-pct', v.confidencePct);
+    r.setProperty('--hour-now', v.hourNow);
+    r.setProperty('--total-plays', v.totalPlays);
+    r.setProperty('--top-count', v.topCount);
+  })();
+</script>
+{% endblock %}
+
+{% block content %}
+
+{% set np = plays[0] if plays else None %}
+
+<!-- masthead -->
+<section class="mast">
+
+  <!-- now playing -->
+  <div class="np">
+    <div class="np-tag up"><span class="dot"></span> Now playing · stream 02</div>
+    {% if np %}
+    <h1 class="serif"><span class="song"
+        data-artist="{{ np.artist }}"
+        data-genre="{{ np.genre or '—' }}"
+        data-year="{{ np.year or '' }}"
+        data-bpm="{{ np.tempo|int if np.tempo else '' }}"
+        data-key="{{ np.music_key or '—' }}"
+        data-mood="{{ np.detected_mood or '' }}">{{ np.name }}</span></h1>
+    <div class="artist">by <b>{{ np.artist }}</b>
+      {% if np.album %}<span class="dim">· {{ np.album }} ({{ np.year or '—' }})</span>{% endif %}
+    </div>
+
+    <div class="meta">
+      <div><b>{{ np.tempo|int if np.tempo else '—' }} BPM</b><span class="up">tempo</span></div>
+      <div><b>{{ np.music_key or '—' }}</b><span class="up">key</span></div>
+      <div><b>{{ '%.2f'|format(np.energy or 0) }}</b><span class="up">energy</span></div>
+      <div><b>{{ '%.2f'|format(np.valence or 0) }}</b><span class="up">valence</span></div>
+      <div><b class="tang">{{ np.detected_mood or 'wistful' }}</b><span class="up">detected mood</span></div>
+    </div>
+    {% else %}
+    <h1 class="serif">No history yet —<br/><em>press play.</em></h1>
+    {% endif %}
+
+    <div class="wave">
+      <svg id="wave" viewBox="0 0 600 54" preserveAspectRatio="none"></svg>
+      <div class="scrub"><i></i><b></b></div>
+      <div class="t"><span>01:42</span><span>04:03</span></div>
+    </div>
+
+    <div class="transport">
+      <button title="prev">◀◀</button>
+      <button class="play" title="pause">❚❚</button>
+      <button title="next">▶▶</button>
+      <button title="like" style="margin-left:8px">♡</button>
+      <div style="margin-left:auto;font-size:10px;color:var(--muted)" class="up">{{ plays|length }} recent plays</div>
+    </div>
+  </div>
+
+  <!-- predicted next -->
+  <div class="next">
+    <div class="hd">
+      <h3>Predicted, next in queue.</h3>
+      <div class="conf">mood-rerank confidence
+        <div class="bar"><i></i></div> <b>87%</b>
+      </div>
+    </div>
+
+    <div class="queue" id="queue">
+      {% for x in queue %}
+      <div class="q-item {% if x.lead %}lead{% endif %}">
+        <div class="rank serif">{{ '%02d'|format(loop.index) }}</div>
+        <div>
+          <div class="title"><span class="song"
+            data-artist="{{ x.a.split(' · ')[0] }}"
+            data-genre="{{ x.g }}"
+            data-year="{{ x.y }}"
+            data-bpm="{{ x.bpm }}"
+            data-key="{{ x.key }}">{{ x.t }}</span></div>
+          <div class="sub">{{ x.a }}</div>
+        </div>
+        <div>
+          <div class="pct">{{ x.p }}%</div>
+          <div class="why">{{ x.why }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="why-box">
+      <b>Why these?</b> Based on your <span class="tang">"{{ dominant }}"</span> dominant mood
+      and your last {{ plays|length }} plays, our re-ranker weighted tempo proximity, time-of-day
+      cluster ({{ '%02d'|format(plays[0].hour if plays else 22) }}:00), and audio-feature similarity
+      to choose this queue.
+    </div>
+  </div>
+</section>
+
+<!-- mood strip -->
+<section class="mood-strip">
+  <div class="label">
+    <div class="k up">Detected mood</div>
+    <div class="v serif italic" id="moodTitle">{{ dominant|capitalize }}</div>
+    <div class="k mut" style="margin-top:4px">tap a chip to recompute</div>
+  </div>
+  <div class="mood-chips" id="moodChips">
+    {% set seen_dom = namespace(val=false) %}
+    {% for m in ["wistful","focused","euphoric","restless","tender","hype"] %}
+      {% set cur = (mood_pct|selectattr('k','equalto',m)|first) %}
+      <div class="chip {% if not seen_dom.val and m == dominant %}active{% endif %}" data-mood="{{ m }}">
+        <div class="emo serif">{{ m }}</div>
+        <div class="stat"><span>{{ cur.v if cur else 0 }}%</span><span>{{ (cur.say if cur else '')[:24] }}…</span></div>
+        <div class="mini">
+          {% for _ in range(14) %}
+            {% set bar_height = 20 + ((cur.v if cur else 5) * 2) + ((loop.index * 5) % 30) %}
+            <i data-h="{{ bar_height }}"></i>
+          {% endfor %}
+        </div>
+      </div>
+      {% if m == dominant %}{% set seen_dom.val = true %}{% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<!-- grid: heatmap + ring -->
+<section class="grid">
+
+  <div class="card">
+    <div class="hd">
+      <h3>When you listen — 7 days × 24 hours.</h3>
+      <div class="ctrls"><span class="on">plays</span><span>minutes</span><span>unique</span></div>
+    </div>
+    <div class="heat">
+      <div class="ylabs">
+        <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+      </div>
+      <div class="heat-grid">
+        <svg id="heatmap" viewBox="0 0 720 210" preserveAspectRatio="none"></svg>
+        <div class="xlabs"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="up">low</span>
+      <div class="scale" id="legendScale"></div>
+      <span class="up">high</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd">
+      <h3>Mood fingerprint, 30-day.</h3>
+      <div class="ctrls"><span>day</span><span>week</span><span class="on">month</span></div>
+    </div>
+    <div class="ring-wrap">
+      <div class="ring">
+        <svg id="ring" viewBox="0 0 120 120"></svg>
+        <div class="center">
+          <div>
+            <div class="big serif italic">{{ dominant|capitalize }}</div>
+            {% set dom_item = mood_pct|selectattr('k','equalto',dominant)|first %}
+            <div class="small up">
+              dominant · {{ dom_item.v if dom_item else 0 }}%
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ring-legend">
+        {% for m in mood_pct %}
+        <div class="row">
+          <div class="sw" data-bg="{{ m.hex }}"></div>
+          <div><b>{{ m.k }}</b><div style="color:var(--muted);font-size:9px;margin-top:2px">{{ m.say }}</div></div>
+          <div class="p">{{ m.v }}%</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- grid 2: top tracks + rhythm + dna -->
+<section class="grid2">
+
+  <div class="card">
+    <div class="hd"><h3>Most-played, last 30 days.</h3><span class="num">N · {{ top|length }}</span></div>
+    <div class="tt">
+      {% for t in top %}
+      <div class="row">
+        <div class="rk">{{ '%02d'|format(loop.index) }}</div>
+        <div class="meta"><b><span class="song"
+          data-artist="{{ t.artist }}"
+          data-genre="{{ t.genre or '—' }}"
+          data-year="{{ t.year or '' }}"
+          data-bpm="{{ t.tempo|int if t.tempo else '' }}"
+          data-key="{{ t.music_key or '—' }}">{{ t.name }}</span></b>
+          <i>{{ t.artist }}{% if t.album %} · {{ t.album }}{% endif %}</i>
+        </div>
+        <div class="bars">
+          {% for _ in range(18) %}<i data-h="{{ 20 + (loop.index * 4 % 70) }}"></i>{% endfor %}
+        </div>
+        <div class="pl">{{ t.plays }}<span>plays</span></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card rhythm">
+    <div class="hd">
+      <h3>Daily listening rhythm.</h3>
+      <div class="ctrls"><span class="on">avg</span><span>today</span><span>vs. last week</span></div>
+    </div>
+    <svg id="rhythm" viewBox="0 0 600 220"></svg>
+    <div class="insights">
+      <div class="ins h">
+        <b>22:00 — 01:00</b>
+        <span>Your prime listening window — most plays land here, mostly <b class="tang">{{ dominant }}</b>.</span>
+      </div>
+      <div class="ins">
+        <b>09:00 — 11:00</b>
+        <span>Morning second-wind. Tempo trends higher with focused or hype tracks.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><h3>Recommendation DNA.</h3><span class="num">7 factors</span></div>
+    <div class="dna">
+      {% set factors = [
+        ["Tempo affinity","±12 BPM from your median",0.78],
+        ["Time-of-day match","22:00–01:00 cluster",0.91],
+        ["Mood signature",dominant+" · primary",0.84],
+        ["Recent listening","last 50 plays",0.72],
+        ["Skip avoidance","0% skip risk",0.66],
+        ["Co-listener network","17 mutuals",0.54],
+        ["Novelty injection","12% new artists",0.39],
+      ] %}
+      {% for f in factors %}
+      <div class="factor">
+        <div class="top"><b>{{ f[0] }}</b><span>{{ (f[2]*100)|int }}</span></div>
+        <div class="track"><i data-pct="{{ (f[2]*100)|int }}"></i></div>
+        <div class="scale"><span>{{ f[1] }}</span><span class="up">weight</span></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</section>
+
+<!-- ticker -->
+<div class="ticker">
+  <div class="reel">
+    {% for t in top + top %}
+      <span>{{ t.artist }} <em>·</em></span>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script id="page-data" type="application/json">{{ {"heat": heat, "mood_pct": mood_pct, "hour_hist": hour_hist} | tojson }}</script>
+<script>
+  (function(){
+    const pageData = JSON.parse(document.getElementById('page-data').textContent);
+    zDrawWave(document.getElementById('wave'));
+    zDrawHeatmap(document.getElementById('heatmap'), pageData.heat);
+    zDrawRing(document.getElementById('ring'), pageData.mood_pct);
+    zDrawRhythm(document.getElementById('rhythm'), pageData.hour_hist);
+    zMoodChips();
+
+    document.querySelectorAll('[data-h]').forEach(el=>{
+      el.style.height = el.dataset.h + '%';
+    });
+    document.querySelectorAll('[data-pct]').forEach(el=>{
+      el.style.width = el.dataset.pct + '%';
+    });
+    document.querySelectorAll('[data-bg]').forEach(el=>{
+      el.style.background = el.dataset.bg;
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Top tracks{% endblock %}
+{% block crumb %}Top tracks{% endblock %}
+{% block sub %}most-played, ranked{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+  <h1>Your <em>top {{ top|length }}</em>,<br/>by sheer repeat count.</h1>
+  <div class="desc">
+    Ranked by play count across your full history. Hover for audio fingerprint.
+    The bars show relative play volume against your #1.
+  </div>
+</div>
+
+{% set total_plays = top|sum(attribute='plays') %}
+{% set top_track = top[0] if top else none %}
+{% set max_plays = top_track.plays if top_track and top_track.plays > 0 else 1 %}
+
+<div class="stats">
+  <div class="stat">
+    <div class="k">Total plays</div>
+    <div class="v">{{ total_plays }}</div>
+    <div class="b">across these tracks</div>
+  </div>
+
+  <div class="stat">
+    <div class="k">#1 track</div>
+    <div class="v" style="font-size:18px">
+      {{ top_track.name[:18] ~ '…' if top_track else 'No tracks yet' }}
+    </div>
+    <div class="b">
+      {{ top_track.plays if top_track else 0 }} plays
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="k">Avg tempo</div>
+    <div class="v">
+      {{ ((top|sum(attribute='tempo') / (top|length or 1))|int) }}
+      <em>BPM</em>
+    </div>
+    <div class="b">your median heartbeat</div>
+  </div>
+
+  <div class="stat">
+    <div class="k">Avg valence</div>
+    <div class="v">
+      {{ '%.2f'|format((top|sum(attribute='valence') / (top|length or 1))) }}
+    </div>
+    <div class="b">0 = bleak · 1 = bright</div>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="tt" style="padding:8px 18px">
+
+    {% if top %}
+
+      {% for t in top %}
+      <div class="row" style="grid-template-columns:32px 2fr 120px 60px 90px">
+
+        <div class="rk">
+          {{ '%02d'|format(loop.index) }}
+        </div>
+
+        <div class="meta">
+          <b>
+            <span class="song"
+              data-artist="{{ t.artist }}"
+              data-genre="{{ t.genre or '—' }}"
+              data-year="{{ t.year or '' }}"
+              data-bpm="{{ t.tempo|int if t.tempo else '' }}"
+              data-key="{{ t.music_key or '—' }}">
+              {{ t.name }}
+            </span>
+          </b>
+
+          <i>
+            {{ t.artist }}
+            {% if t.album %}
+              · {{ t.album }}
+            {% endif %}
+          </i>
+        </div>
+
+        <div style="height:24px;display:flex;align-items:flex-end;gap:2px">
+          {% for _ in range(24) %}
+          <i
+            style="
+              flex:1;
+              background:var(--tang);
+              opacity:0.8;
+              height:50%;
+            ">
+          </i>
+          {% endfor %}
+        </div>
+
+        <div class="pl">
+          {{ t.plays }}
+          <span>plays</span>
+        </div>
+
+        <div class="pl" style="color:var(--bone-dim)">
+          {{ t.tempo|int if t.tempo else '—' }}
+          <span>BPM</span>
+        </div>
+
+      </div>
+      {% endfor %}
+
+    {% else %}
+
+      <div style="padding:40px;text-align:center">
+        <h3>No listening history found</h3>
+        <p>
+          Connect Spotify and listen to some music to build your rankings.
+        </p>
+      </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

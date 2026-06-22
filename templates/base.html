@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>{% block title %}Zintro{% endblock %} — your music, decoded.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% if user %}
+<div class="shell">
+
+  <!-- ── sidebar ── -->
+  <aside class="side">
+    <a href="{{ url_for('home') }}" class="brand">
+      <div class="mark">zintro<span class="dot">.</span></div>
+      <span class="v">v3</span>
+    </a>
+
+    <nav>
+      {% for endpoint, label, ic in nav %}
+        <a href="{{ url_for(endpoint) }}" class="{{ 'on' if active == endpoint else '' }}">
+          <span class="ic">{{ ic }}</span>{{ label }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="uc">
+      <span class="badge {{ 'live' if spotify_ready else '' }}">
+        {{ 'spotify · live' if spotify_ready else 'demo mode' }}
+      </span>
+      <div class="who">
+        <div class="av">{{ user.display_name[:1] | upper }}</div>
+        <div>
+          <div class="name">{{ user.display_name }}</div>
+          <div class="sub">{{ 'spotify' if user.spotify_id else 'demo session' }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="out up">↩ sign out</a>
+    </div>
+  </aside>
+
+  <!-- ── main column ── -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="crumb">
+        <b>{% block crumb %}{% endblock %}</b>
+        <em>· {% block sub %}{% endblock %}</em>
+      </div>
+      <div class="tb-meta">
+        <div class="search">
+          <span style="color:var(--muted)">⌕</span>
+          <input placeholder="search artists, songs, moods…" />
+        </div>
+        <div class="kv up">Local <b id="clock">—</b></div>
+        <div class="live"><span class="dot"></span><span class="up">live</span></div>
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    {% block footer %}
+    <footer class="zfoot">
+      <div class="big">Press <em>play</em>.<br/>The rest is <em>chemistry</em>.</div>
+      <div class="cols">
+        <div class="col brand-col">
+          <div class="mark">zintro<span class="dot">.</span></div>
+          <p>A music player that listens back. Built for headphones, late hours, and the songs you can't explain why you love.</p>
+          <form class="news" onsubmit="event.preventDefault(); this.querySelector('input').value=''; this.querySelector('button').textContent='✓';">
+            <input type="email" placeholder="you@somewhere.com"/>
+            <button type="submit">→</button>
+          </form>
+        </div>
+        <div class="col"><h5>Product</h5><ul>
+          <li><a href="{{ url_for('discover') }}">Discover</a></li>
+          <li><a href="{{ url_for('moods') }}">Mood radio</a></li>
+          <li><a href="{{ url_for('top_tracks') }}">Daily mixes</a></li>
+          <li><a href="#">Concert finder</a></li>
+          <li><a href="#">Lyrics live</a></li>
+        </ul></div>
+        <div class="col"><h5>Listen</h5><ul>
+          <li><a href="#">Web player</a></li>
+          <li><a href="#">iOS · Android</a></li>
+          <li><a href="#">Desktop app</a></li>
+          <li><a href="#">CarPlay</a></li>
+          <li><a href="#">Smart speakers</a></li>
+        </ul></div>
+        <div class="col"><h5>Company</h5><ul>
+          <li><a href="#">About</a></li><li><a href="#">Manifesto</a></li>
+          <li><a href="#">Press kit</a></li><li><a href="#">Careers · 14</a></li>
+          <li><a href="#">For artists</a></li>
+        </ul></div>
+        <div class="col"><h5>Legal</h5><ul>
+          <li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li>
+          <li><a href="#">Cookies</a></li><li><a href="#">DMCA</a></li>
+          <li><a href="#">Licensing</a></li>
+        </ul></div>
+      </div>
+      <div class="bottom">
+        <div>© 2026 Zintro Audio Labs · Built in Lisbon, Berlin &amp; Mumbai</div>
+        <div class="socials"><a href="#">ig</a><a href="#">x</a><a href="#">tk</a><a href="#">yt</a><a href="#">gh</a></div>
+        <div>Status · <span style="color:var(--teal)">● all systems normal</span></div>
+      </div>
+    </footer>
+    {% endblock %}
+
+  </main>
+</div>
+{% else %}
+  {% block fullpage %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

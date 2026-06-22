@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Recently played{% endblock %}
+{% block crumb %}Recently played{% endblock %}
+{% block sub %}your chronological history{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+  <h1>The last <em>{{ plays|length }}</em> things you played.</h1>
+  <div class="desc">A real-time tail of your listening log. Hover any track for instant
+    artist, genre, BPM, and key. <b>Mood pills</b> show what each play was classified as.</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="k">Plays shown</div><div class="v">{{ plays|length }}</div><div class="b">most recent first</div></div>
+  <div class="stat"><div class="k">Unique tracks</div><div class="v">{{ plays|map(attribute='track_id')|unique|list|length }}</div><div class="b">distinct in this window</div></div>
+  <div class="stat"><div class="k">Top hour</div><div class="v">{{ '%02d'|format((plays|map(attribute='hour')|list).0 or 0) }}<em>:00</em></div><div class="b">most recent peak</div></div>
+  <div class="stat"><div class="k">Listening hours</div><div class="v">{{ ((plays|length) * 3 / 60)|round(1) }}<em>h</em></div><div class="b">estimated</div></div>
+</div>
+
+<div class="tracklist">
+  <div class="hd-row">
+    <span>#</span><span>Track</span><span>Album</span><span>Mood</span><span style="text-align:right">When</span><span style="text-align:right">Len</span>
+  </div>
+  {% for p in plays %}
+  <div class="row">
+    <div class="rk">{{ '%02d'|format(loop.index) }}</div>
+    <div class="ti">
+      <b><span class="song"
+        data-artist="{{ p.artist }}"
+        data-genre="{{ p.genre or '—' }}"
+        data-year="{{ p.year or '' }}"
+        data-bpm="{{ p.tempo|int if p.tempo else '' }}"
+        data-key="{{ p.music_key or '—' }}"
+        data-mood="{{ p.detected_mood or '' }}">{{ p.name }}</span></b>
+      <i>{{ p.artist }}</i>
+    </div>
+    <div class="meta">{{ p.album or '—' }}</div>
+    <div><span class="mood-pill mp-{{ p.detected_mood or 'wistful' }}">{{ p.detected_mood or 'wistful' }}</span></div>
+    <div class="when">{{ p.played_at|ts }}</div>
+    <div class="dur">3:{{ '%02d'|format((loop.index * 7) % 60) }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

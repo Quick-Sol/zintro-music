@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Library{% endblock %}
+{% block crumb %}Library{% endblock %}
+{% block sub %}{{ tracks|length }} saved tracks{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+  <h1>Saved, kept, <em>cherished</em>.</h1>
+  <div class="desc">Your personal library — tracks you explicitly saved. Synced from Spotify's
+    /me/tracks when you sign in live.</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="k">Saved tracks</div><div class="v">{{ tracks|length }}</div><div class="b">in your library</div></div>
+  <div class="stat"><div class="k">Avg tempo</div><div class="v">{{ ((tracks|sum(attribute='tempo') / (tracks|length or 1))|int) }}<em>BPM</em></div></div>
+  <div class="stat"><div class="k">Oldest</div><div class="v">{{ (tracks|sort(attribute='year')|first).year if tracks else '—' }}</div><div class="b">year</div></div>
+  <div class="stat"><div class="k">Newest</div><div class="v">{{ (tracks|sort(attribute='year',reverse=true)|first).year if tracks else '—' }}</div><div class="b">year</div></div>
+</div>
+
+<div class="cards">
+  {% for t in tracks %}
+  <div class="c">
+    <div class="cover"></div>
+    <h4><span class="song"
+        data-artist="{{ t.artist }}"
+        data-genre="{{ t.genre or '—' }}"
+        data-year="{{ t.year or '' }}"
+        data-bpm="{{ t.tempo|int if t.tempo else '' }}"
+        data-key="{{ t.music_key or '—' }}">{{ t.name }}</span></h4>
+    <div class="ar">{{ t.artist }}</div>
+    <div class="ge"><span>{{ (t.genre or '—')[:22] }}</span><span class="b">♡</span></div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

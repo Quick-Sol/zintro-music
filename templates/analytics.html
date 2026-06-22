@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block crumb %}Analytics{% endblock %}
+{% block sub %}deep dive into your listening patterns{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+  <h1>The <em>shape</em> of how<br/>you listen.</h1>
+  <div class="desc">Time-of-day patterns, weekday rhythms, genre splits — all computed from a
+    7-day × 24-hour grid of your real plays.</div>
+</div>
+
+{% set total_plays = hour_hist|sum %}
+{% set peak_hour = hour_hist.index(hour_hist|max) if hour_hist and (hour_hist|max) > 0 else None %}
+{% set active_days = heat|map('sum')|select('greaterthan', 0)|list|length if heat else 0 %}
+
+<div class="stats">
+  <div class="stat"><div class="k">Total plays</div><div class="v">{{ total_plays }}</div><div class="b">last 30 days</div></div>
+  <div class="stat"><div class="k">Peak hour</div><div class="v">{{ '%02d'|format(peak_hour) if peak_hour is not none else '—' }}<em>:00</em></div><div class="b">your prime window</div></div>
+  <div class="stat"><div class="k">Active days</div><div class="v">{{ active_days }}<em>/{{ heat|length if heat else 7 }}</em></div><div class="b">consistency streak</div></div>
+  <div class="stat"><div class="k">Top genre</div><div class="v" style="font-size:18px">{{ (genres[0].genre if genres) or '—' }}</div><div class="b">{{ (genres[0].n if genres) or 0 }} plays</div></div>
+</div>
+
+<section class="grid">
+  <div class="card">
+    <div class="hd">
+      <h3>Heatmap · day-of-week × hour.</h3>
+      <div class="ctrls"><span class="on">plays</span><span>density</span></div>
+    </div>
+    <div class="heat">
+      <div class="ylabs">
+        <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+      </div>
+      <div class="heat-grid">
+        <svg id="heatmap" viewBox="0 0 720 210" preserveAspectRatio="none"></svg>
+        <div class="xlabs"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="up">low</span>
+      <div class="scale" id="legendScale"></div>
+      <span class="up">high</span>
+    </div>
+  </div>
+
+  <div class="card rhythm">
+    <div class="hd">
+      <h3>Hour-of-day rhythm.</h3>
+      <div class="ctrls"><span class="on">all days</span><span>weekdays</span><span>weekends</span></div>
+    </div>
+    <svg id="rhythm" viewBox="0 0 600 220"></svg>
+    <div class="insights">
+      <div class="ins h"><b>Peak listening</b><span>{{ '%02d'|format(peak_hour) if peak_hour is not none else '—' }}:00 holds most of your plays{% if peak_hour is not none %} this period{% endif %}.</span></div>
+      <div class="ins"><b>Total volume</b><span>{{ total_plays }} plays logged across the last 30 days.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:var(--grid-gap)">
+  <div class="hd"><h3>Genre breakdown.</h3><span class="num">{{ genres|length }} genres</span></div>
+  {% set max_g = (genres[0].n if genres else 1) %}
+  <div class="dna">
+    {% for g in genres[:10] %}
+    <div class="factor">
+      <div class="top"><b>{{ g.genre }}</b><span>{{ g.n }} plays</span></div>
+      <div class="track"><i data-pct="{{ (g.n * 100 / max_g)|int }}"></i></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script id="page-data" type="application/json">{{ {"heat": heat, "hour_hist": hour_hist} | tojson }}</script>
+<script>
+  (function(){
+    const pageData = JSON.parse(document.getElementById('page-data').textContent);
+    zDrawHeatmap(document.getElementById('heatmap'), pageData.heat);
+    zDrawRhythm(document.getElementById('rhythm'), pageData.hour_hist);
+    document.querySelectorAll('.dna .track i[data-pct]').forEach(el=>{
+      el.style.width = el.dataset.pct + '%';
+    });
+  })();
+</script>
+{% endblock %}

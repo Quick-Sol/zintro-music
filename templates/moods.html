@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}By mood — {{ active_mood }}{% endblock %}
+{% block crumb %}By mood{% endblock %}
+{% block sub %}{{ active_mood }} · {{ tracks|length }} tracks{% endblock %}
+
+{% block content %}
+
+<div class="page-hd">
+    <h1>Your library, sorted by <em>feeling</em>.</h1>
+    <div class="desc">
+        Every play is auto-classified using its audio features
+        (valence, energy, tempo, danceability, acousticness,
+        instrumentalness). Switch tabs to see what each mood pulls.
+    </div>
+</div>
+
+<nav class="tabs">
+    {% for m in mood_list %}
+    <a href="{{ url_for('moods', name=m) }}"
+       class="{% if m == active_mood %}on{% endif %}">
+        <span class="name">{{ m }}</span>
+        <span class="stat">
+            {{ dist.get(m, 0) }} plays · {{ mood_meta[m].blurb[:34] }}…
+        </span>
+    </a>
+    {% endfor %}
+</nav>
+
+{% if tracks %}
+
+<div class="tracklist">
+
+```
+<div class="hd-row">
+    <span>#</span>
+    <span>Track</span>
+    <span>Genre</span>
+    <span>Key · BPM</span>
+    <span style="text-align:right;">Plays</span>
+    <span style="text-align:right;">Val.</span>
+</div>
+
+{% for t in tracks %}
+<div class="row">
+
+    <div class="rk">
+        {{ "%02d"|format(loop.index) }}
+    </div>
+
+    <div class="ti">
+        <b>
+            <span class="song"
+                  data-artist="{{ t.artist }}"
+                  data-genre="{{ t.genre or '—' }}"
+                  data-year="{{ t.year or '' }}"
+                  data-bpm="{{ t.tempo|int if t.tempo else '' }}"
+                  data-key="{{ t.music_key or '—' }}"
+                  data-mood="{{ active_mood }}">
+                {{ t.name }}
+            </span>
+        </b>
+
+        <i>
+            {{ t.artist }}
+            {% if t.album %}
+                · {{ t.album }} ({{ t.year or '—' }})
+            {% endif %}
+        </i>
+    </div>
+
+    <div class="meta">
+        {{ t.genre or '—' }}
+    </div>
+
+    <div class="meta">
+        {{ t.music_key or '—' }}
+        ·
+        {{ t.tempo|int if t.tempo else '—' }}
+    </div>
+
+    <div class="dur">
+        {{ t.plays }}
+    </div>
+
+    <div class="dur">
+        {{ "%.2f"|format(t.valence or 0) }}
+    </div>
+
+</div>
+{% endfor %}
+```
+
+</div>
+
+{% else %}
+
+<div class="card" style="text-align:center;padding:60px 24px;">
+    <h3 class="serif italic" style="font-size:28px;">
+        No plays classified as
+        {{ active_mood }}
+        yet.
+    </h3>
+
+```
+<p class="dim" style="margin-top:10px;">
+    Try another mood, or keep listening —
+    the classifier auto-tags every track you play.
+</p>
+```
+
+</div>
+
+{% endif %}
+
+{% endblock %}
